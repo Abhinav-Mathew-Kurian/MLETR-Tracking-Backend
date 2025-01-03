@@ -5,7 +5,7 @@ const JWT_SECRET = 'your-secret-key';
 
 class Auth {
   static generateToken(userId) {
-    return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
+    return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '1h' });
   }
 
   static async authenticateToken(req, res, next) {
