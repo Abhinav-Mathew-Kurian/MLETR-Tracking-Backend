@@ -156,43 +156,6 @@ app.post('/update-country', async (req, res) => {
 });
 
 
-app.post('/update-countries', async (req, res) => {
-  try {
-    const { updates } = req.body;
-
-    if (!Array.isArray(updates)) {
-      return res.status(400).json({ error: 'Updates must be an array' });
-    }
-
-    const results = await Promise.all(updates.map(async (update) => {
-      const { countryName, ...properties } = update;
-
-      if (!countryName) {
-        return { countryName, success: false, error: 'Country name is missing' };
-      }
-
-      const result = await db.collection('worldgeojson').updateOne(
-        { 'features.properties.name': countryName },
-        { $set: Object.fromEntries(
-            Object.entries(properties).map(([key, value]) => [
-              `features.$.properties.${key}`, value
-            ])
-          )
-        }
-      );
-
-      return {
-        countryName,
-        success: result.modifiedCount > 0,
-      };
-    }));
-
-    res.json({ success: true, results });
-  } catch (error) {
-    console.error('Error updating countries:', error);
-    res.status(500).json({ error: 'Could not update countries data' });
-  }
-});
 
 
 connectToDatabase().then(() => {
