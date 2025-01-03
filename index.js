@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs');
-const Auth = require('./auth');  // Changed import
+const Auth = require('./auth');  
 
 const app = express();
 const PORT = 5001;
@@ -24,27 +24,24 @@ async function connectToDatabase() {
   }
 }
 
-// Register endpoint
+
 app.post('/register', async (req, res) => {
   try {
     const { email, name, password } = req.body;
 
-    // Validate input
     if (!email || !name || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Check if user already exists
+    
     const existingUser = await db.collection('users').findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
     const user = {
       email,
       name,
@@ -55,7 +52,7 @@ app.post('/register', async (req, res) => {
 
     const result = await db.collection('users').insertOne(user);
     
-    // Generate token using the new Auth class
+   
     const token = Auth.generateToken(result.insertedId.toString());
 
     res.status(201).json({
@@ -73,23 +70,22 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Login endpoint
+
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
+ 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Find user
+
     const user = await db.collection('users').findOne({ email });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Verify password
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });

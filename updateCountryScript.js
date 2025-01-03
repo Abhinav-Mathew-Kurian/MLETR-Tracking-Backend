@@ -40,7 +40,7 @@ async function updateMLETRStatus() {
     let successCount = 0;
     let failureCount = 0;
 
-    // Process each country update
+
     for (const country of countryData) {
       try {
         const updateFields = Object.fromEntries(
@@ -81,5 +81,5 @@ async function updateMLETRStatus() {
   }
 }
 
-// Run the update script
+
 updateMLETRStatus();
