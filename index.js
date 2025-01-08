@@ -3,6 +3,8 @@ const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs');
 const Auth = require('./auth');  
+const axios = require('axios');
+const fileUploadRoutes = require('./fileUpload');
 
 const app = express();
 const PORT = 5001;
@@ -18,11 +20,13 @@ async function connectToDatabase() {
     await client.connect();
     db = client.db('MAP_APP');
     console.log('Connected to MongoDB');
+    app.use('/api', fileUploadRoutes(db));
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
   }
 }
+
 
 
 app.post('/register', async (req, res) => {
@@ -33,7 +37,6 @@ app.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    
     const existingUser = await db.collection('users').findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
@@ -52,34 +55,52 @@ app.post('/register', async (req, res) => {
 
     const result = await db.collection('users').insertOne(user);
     
-   
-    const token = Auth.generateToken(result.insertedId.toString());
+    try {
+     
+      const pkiResponse = await axios.post('http://localhost:4000/generate-certificate', {
+        userId: result.insertedId.toString(),
+        email: email
+      });
 
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: {
-        id: result.insertedId,
-        email: user.email,
-        name: user.name
-      }
-    });
+      const token = Auth.generateToken(result.insertedId.toString());
+
+      res.status(201).json({
+        message: 'User registered successfully',
+        token,
+        certificate: pkiResponse.data.certificate,
+        privateKey: pkiResponse.data.privateKey,
+        user: {
+          id: result.insertedId,
+          email: user.email,
+          name: user.name
+        }
+      });
+    } catch (pkiError) {
+      console.error('PKI Server error:', pkiError);
+     
+      const token = Auth.generateToken(result.insertedId.toString());
+      res.status(201).json({
+        message: 'User registered successfully (without certificate)',
+        token,
+        user: {
+          id: result.insertedId,
+          email: user.email,
+          name: user.name
+        }
+      });
+    }
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Registration failed' });
   }
 });
-
-
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
- 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-
 
     const user = await db.collection('users').findOne({ email });
     if (!user) {
@@ -89,6 +110,16 @@ app.post('/login', async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    try {
+      await axios.post('http://localhost:4000/verify-certificate', {
+        userId: user._id.toString(),
+        email: email
+      });
+    } catch (pkiError) {
+      console.error('PKI verification failed:', pkiError);
+      return res.status(401).json({ error: 'Certificate verification failed' });
     }
 
     const token = Auth.generateToken(user._id.toString());
