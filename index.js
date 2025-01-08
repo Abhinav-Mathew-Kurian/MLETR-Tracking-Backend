@@ -57,7 +57,7 @@ app.post('/register', async (req, res) => {
     
     try {
      
-      const pkiResponse = await axios.post('http://localhost:4000/generate-certificate', {
+      const pkiResponse = await axios.post('https://mletr-tracker-pki.onrender.com/generate-certificate', {
         userId: result.insertedId.toString(),
         email: email
       });
@@ -113,7 +113,7 @@ app.post('/login', async (req, res) => {
     }
 
     try {
-      await axios.post('http://localhost:4000/verify-certificate', {
+      await axios.post('https://mletr-tracker-pki.onrender.com/verify-certificate', {
         userId: user._id.toString(),
         email: email
       });
