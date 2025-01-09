@@ -56,7 +56,7 @@ app.post('/register', async (req, res) => {
     const result = await db.collection('users').insertOne(user);
     
     try {
-     
+      // https://mletr-tracker-pki.onrender.com/generate-certificate'
       const pkiResponse = await axios.post('https://mletr-tracker-pki.onrender.com/generate-certificate', {
         userId: result.insertedId.toString(),
         email: email
@@ -112,7 +112,7 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check for certificate in MongoDB
+
     const certificate = await db.collection('pki_certificates').findOne({
       userId: user._id.toString(),
       email: email
@@ -122,7 +122,6 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Certificate not found. Please register again.' });
     }
 
-    // Check if certificate is expired
     if (new Date() > new Date(certificate.validTo)) {
       return res.status(401).json({ error: 'Certificate expired. Please request a new certificate.' });
     }
@@ -139,6 +138,7 @@ app.post('/login', async (req, res) => {
       },
       certificate: {
         serialNumber: certificate.serialNumber,
+        signature:certificate.signature,
         validTo: certificate.validTo
       }
     });
