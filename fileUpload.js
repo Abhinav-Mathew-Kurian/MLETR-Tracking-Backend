@@ -7,7 +7,7 @@ const { ObjectId, GridFSBucket } = require('mongodb');
 const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
 
-// Debug helper to inspect key format
+
 const debugKey = (key, label) => {
   console.log(`\n=== ${label} ===`);
   console.log('Key type:', typeof key);
